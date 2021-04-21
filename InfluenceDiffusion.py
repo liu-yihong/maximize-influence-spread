@@ -148,3 +148,4 @@ def hill_climbing_greedy(underlying_graph, k, max_iter, p_cascade, mode):
             array_parallelized_diffusion_result[:, 1].argsort()]
         greedy_initial_set = array_parallelized_diffusion_result[-1, 0]
     return greedy_initial_set
+
