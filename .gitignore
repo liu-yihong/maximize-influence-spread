@@ -1,0 +1,6 @@
+
+*.pyc
+.ipynb_checkpoints/test-case-checkpoint.ipynb
+.paper/
+.__pycache__/
+.idea/
