@@ -5,3 +5,5 @@ preprocess.py
 .paper/
 .__pycache__/
 .idea/
+*.mm
+*.pdf
