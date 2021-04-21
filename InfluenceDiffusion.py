@@ -111,9 +111,10 @@ def begin_diffusion(initial_set, underlying_graph, max_iter, mode, p_cascade=0.0
 
 
 def random_draw(underlying_graph, k):
+    # # here the underlying graph can be multigraph or directed graph
     set_all_nodes = set(underlying_graph.nodes())
     initial_set = random.sample(set_all_nodes, k)
-    return initial_set
+    return set(initial_set)
 
 
 def degree_heuristic(underlying_graph, k):
@@ -132,7 +133,7 @@ def centrality_heuristic(underlying_graph, k):
     dict_closeness_for_nodes = nx.closeness_centrality(underlying_graph)
     array_node_and_closeness = np.array(list(dict_closeness_for_nodes.items()))
     array_node_and_closeness = array_node_and_closeness[array_node_and_closeness[:, 1].argsort()]
-    return set(array_node_and_closeness[-k:, 0])
+    return set(array_node_and_closeness[-k:, 0].astype(int))
 
 
 def hill_climbing_greedy(underlying_graph, k, max_iter, p_cascade, mode):
