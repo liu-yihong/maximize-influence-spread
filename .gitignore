@@ -1,5 +1,6 @@
 
 *.pyc
+preprocess.py
 .ipynb_checkpoints/test-case-checkpoint.ipynb
 .paper/
 .__pycache__/
