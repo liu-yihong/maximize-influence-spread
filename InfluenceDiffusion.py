@@ -4,9 +4,11 @@
 This script ...
 """
 
+import random
+
 import networkx as nx
 import numpy as np
-import random
+import pandas as pd
 from joblib import Parallel, delayed
 
 
@@ -149,3 +151,29 @@ def hill_climbing_greedy(underlying_graph, k, max_iter, p_cascade, mode):
         greedy_initial_set = array_parallelized_diffusion_result[-1, 0]
     return greedy_initial_set
 
+
+def read_data():
+    # read email data from http://networkrepository.com/email-dnc.php
+    adj_list = pd.read_csv('data/email-dnc.edges',
+                           skiprows=0,
+                           delimiter=',',
+                           names=['FROM', 'TO', 'TIME'])
+    # this is a multigraph
+    multigraph = nx.from_pandas_edgelist(adj_list[['FROM', 'TO']],
+                                         source='FROM',
+                                         target='TO',
+                                         create_using=nx.MultiGraph)
+    # this is the directed graph, derived from the multigraph
+    directed_graph = nx.DiGraph()
+
+    for edge in set(multigraph.edges()):
+        # get statistics
+        u, v = edge[0], edge[1]
+        num_edges_u_v = multigraph.number_of_edges(u, v)
+        degree_u = multigraph.degree(u)
+        degree_v = multigraph.degree(v)
+        # construct graphs for influence models
+        directed_graph.add_edge(u, v, c=num_edges_u_v, weight=num_edges_u_v / degree_v, du=degree_u, dv=degree_v)
+        directed_graph.add_edge(v, u, c=num_edges_u_v, weight=num_edges_u_v / degree_u, du=degree_v, dv=degree_u)
+
+    return multigraph, directed_graph
