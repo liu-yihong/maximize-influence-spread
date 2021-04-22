@@ -134,25 +134,37 @@ def centrality_heuristic(underlying_graph, k):
     dict_closeness_for_nodes = nx.closeness_centrality(underlying_graph)
     array_node_and_closeness = np.array(list(dict_closeness_for_nodes.items()))
     array_node_and_closeness = array_node_and_closeness[array_node_and_closeness[:, 1].argsort()]
-    return set(array_node_and_closeness[-k:, 0].astype(int))
+    return set(array_node_and_closeness[-k:, 0].astype(int)), array_node_and_closeness
 
 
-def hill_climbing_greedy(underlying_graph, k, max_iter, p_cascade=0.01, mode='linear threshold'):
+def hill_climbing_greedy(underlying_graph, k, max_iter, exp_iter, p_cascade=0.01, mode='linear threshold'):
     set_all_nodes = set(underlying_graph.nodes())
     greedy_initial_set = set()
-    for iter_cnt in range(k):
+    dict_tracking = dict()
+    for iter_cnt1 in range(k):
         set_valid_nodes = set_all_nodes - greedy_initial_set
-        parallelized_diffusion_result = \
-            Parallel(n_jobs=-1)(delayed(begin_diffusion)(greedy_initial_set.union({u}),
-                                                         underlying_graph=underlying_graph,
-                                                         max_iter=max_iter,
-                                                         mode=mode,
-                                                         p_cascade=p_cascade) for u in set_valid_nodes)
-        array_parallelized_diffusion_result = np.array(parallelized_diffusion_result)
-        array_parallelized_diffusion_result = array_parallelized_diffusion_result[
-            array_parallelized_diffusion_result[:, 1].argsort()]
-        greedy_initial_set = array_parallelized_diffusion_result[-1, 0]
-    return greedy_initial_set
+        dict_diffusion_result_pool = dict()
+        for iter_cnt2 in range(exp_iter):
+            parallelized_diffusion_result = \
+                Parallel(n_jobs=-1)(delayed(begin_diffusion)(greedy_initial_set.union({u}),
+                                                             underlying_graph=underlying_graph,
+                                                             max_iter=max_iter,
+                                                             mode=mode,
+                                                             p_cascade=p_cascade) for u in set_valid_nodes)
+            for element in parallelized_diffusion_result:
+                focal_set = element[0]
+                focal_frozenset = frozenset(list(focal_set))
+                if focal_frozenset not in dict_diffusion_result_pool.keys():
+                    dict_diffusion_result_pool[focal_frozenset] = 0
+                dict_diffusion_result_pool[focal_frozenset] += element[1]
+            # array_parallelized_diffusion_result = np.array(parallelized_diffusion_result)
+            # array_parallelized_diffusion_result = array_parallelized_diffusion_result[
+            #    array_parallelized_diffusion_result[:, 1].argsort()]
+        # greedy_initial_set = array_parallelized_diffusion_result[-1, 0]
+        greedy_initial_frozenset = max(dict_diffusion_result_pool, key=dict_diffusion_result_pool.get)
+        greedy_initial_set = set(list(greedy_initial_frozenset))
+        dict_tracking[iter_cnt1] = greedy_initial_set
+    return greedy_initial_set, dict_tracking
 
 
 def read_data():
