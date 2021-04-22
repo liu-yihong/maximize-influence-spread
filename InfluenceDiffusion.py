@@ -52,7 +52,7 @@ def begin_diffusion(initial_set, underlying_graph, max_iter, mode, p_cascade=0.0
                 if cumulative_weight_of_u > dict_individual_threshold[u]:
                     list_nodes_await_to_be_activated.append(u)
             if len(list_nodes_await_to_be_activated) == 0:
-                print("MODE: linear threshold - EARLY TERMINATION")
+                # print("MODE: linear threshold - EARLY TERMINATION")
                 break
             set_active_nodes.update(list_nodes_await_to_be_activated)
             set_inactive_nodes.difference_update(set(list_nodes_await_to_be_activated))
@@ -80,7 +80,7 @@ def begin_diffusion(initial_set, underlying_graph, max_iter, mode, p_cascade=0.0
                         set_active_nodes.add(v)
                         set_inactive_nodes.remove(v)
             if len(activation_attempts) == 0:
-                print("MODE: independent cascade - EARLY TERMINATION")
+                #print("MODE: independent cascade - EARLY TERMINATION")
                 break
     elif mode == 'weighted cascade':
         activation_history = []
@@ -105,7 +105,7 @@ def begin_diffusion(initial_set, underlying_graph, max_iter, mode, p_cascade=0.0
                         set_active_nodes.add(v)
                         set_inactive_nodes.remove(v)
             if len(activation_attempts) == 0:
-                print("MODE: weighted cascade - EARLY TERMINATION")
+                #print("MODE: weighted cascade - EARLY TERMINATION")
                 break
     return initial_set, len(set_active_nodes)
 
