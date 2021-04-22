@@ -141,12 +141,13 @@ def hill_climbing_greedy(underlying_graph, k, max_iter, p_cascade=0.01, mode='li
     set_all_nodes = set(underlying_graph.nodes())
     greedy_initial_set = set()
     for iter_cnt in range(k):
+        set_valid_nodes = set_all_nodes - greedy_initial_set
         parallelized_diffusion_result = \
             Parallel(n_jobs=-1)(delayed(begin_diffusion)(greedy_initial_set.union({u}),
                                                          underlying_graph=underlying_graph,
                                                          max_iter=max_iter,
                                                          mode=mode,
-                                                         p_cascade=p_cascade) for u in set_all_nodes)
+                                                         p_cascade=p_cascade) for u in set_valid_nodes)
         array_parallelized_diffusion_result = np.array(parallelized_diffusion_result)
         array_parallelized_diffusion_result = array_parallelized_diffusion_result[
             array_parallelized_diffusion_result[:, 1].argsort()]
@@ -192,11 +193,11 @@ def experiments_and_plot(multi_graph, directed_graph, max_k=10, num_exp=500, max
         target_set1 = random_draw(multi_graph, k=k + 1)
         target_set2 = degree_heuristic(multi_graph, k=k + 1)
         target_set3 = centrality_heuristic(multi_graph, k=k + 1)
-        target_set4 = greedy_initial_set = hill_climbing_greedy(directed_graph,
-                                                                k=k + 1,
-                                                                max_iter=max_iter,
-                                                                p_cascade=p_cascade,
-                                                                mode=mode)
+        target_set4 = hill_climbing_greedy(directed_graph,
+                                           k=k + 1,
+                                           max_iter=max_iter,
+                                           p_cascade=p_cascade,
+                                           mode=mode)
 
         parallelized_diffusion_result1 = \
             Parallel(n_jobs=-1)(delayed(begin_diffusion)(target_set1,
@@ -226,15 +227,15 @@ def experiments_and_plot(multi_graph, directed_graph, max_k=10, num_exp=500, max
                                                          mode=mode,
                                                          p_cascade=p_cascade) for l in range(num_exp))
 
-        temp_list1.append(parallelized_diffusion_result1[0])
-        temp_list2.append(parallelized_diffusion_result2[0])
-        temp_list3.append(parallelized_diffusion_result3[0])
-        temp_list4.append(parallelized_diffusion_result4[0])
+        temp_list1.append(np.array(parallelized_diffusion_result1)[:, 1])
+        temp_list2.append(np.array(parallelized_diffusion_result2)[:, 1])
+        temp_list3.append(np.array(parallelized_diffusion_result3)[:, 1])
+        temp_list4.append(np.array(parallelized_diffusion_result4)[:, 1])
     # plot
-    S1 = np.array(temp_list1)
-    S2 = np.array(temp_list2)
-    S3 = np.array(temp_list3)
-    S4 = np.array(temp_list4)
+    S1 = np.array(temp_list1).astype(float)
+    S2 = np.array(temp_list2).astype(float)
+    S3 = np.array(temp_list3).astype(float)
+    S4 = np.array(temp_list4).astype(float)
 
     mu1 = S1.mean(axis=1)
     sigma1 = S1.std(axis=1)
@@ -268,4 +269,4 @@ def experiments_and_plot(multi_graph, directed_graph, max_k=10, num_exp=500, max
     ax.set_ylabel('Size of Final Active Size')
     ax.grid()
 
-    return 0
+    pass

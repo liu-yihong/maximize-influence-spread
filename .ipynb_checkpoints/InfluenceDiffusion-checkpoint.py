@@ -141,12 +141,13 @@ def hill_climbing_greedy(underlying_graph, k, max_iter, p_cascade=0.01, mode='li
     set_all_nodes = set(underlying_graph.nodes())
     greedy_initial_set = set()
     for iter_cnt in range(k):
+        set_valid_nodes = set_all_nodes - greedy_initial_set
         parallelized_diffusion_result = \
             Parallel(n_jobs=-1)(delayed(begin_diffusion)(greedy_initial_set.union({u}),
                                                          underlying_graph=underlying_graph,
                                                          max_iter=max_iter,
                                                          mode=mode,
-                                                         p_cascade=p_cascade) for u in set_all_nodes)
+                                                         p_cascade=p_cascade) for u in set_valid_nodes)
         array_parallelized_diffusion_result = np.array(parallelized_diffusion_result)
         array_parallelized_diffusion_result = array_parallelized_diffusion_result[
             array_parallelized_diffusion_result[:, 1].argsort()]
@@ -268,4 +269,4 @@ def experiments_and_plot(multi_graph, directed_graph, max_k=10, num_exp=500, max
     ax.set_ylabel('Size of Final Active Size')
     ax.grid()
 
-    return 0
+    pass
