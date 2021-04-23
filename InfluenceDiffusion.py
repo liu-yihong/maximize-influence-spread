@@ -9,8 +9,10 @@ import random
 import networkx as nx
 import numpy as np
 import pandas as pd
+from IPython.display import clear_output
 from joblib import Parallel, delayed
 from matplotlib import pyplot as plt
+from tqdm import tqdm
 
 
 def generate_individual_threshold(nodes_set):
@@ -43,6 +45,22 @@ def begin_diffusion(initial_set, underlying_graph, max_iter, mode, p_cascade=0.0
     if mode == 'linear threshold':
         # generate randomly individual threshold
         dict_individual_threshold = generate_individual_threshold(nodes_set=set_all_nodes)
+        # with trange(max_iter) as t:
+        #     for i in t:
+        #         t.set_description("MODE: linear threshold ITER: %i" % i)
+        #         list_nodes_await_to_be_activated = []
+        #         for u in set_inactive_nodes:
+        #             neighbor_of_u = set(underlying_graph.predecessors(u))  # TODO: check predecessor or successor
+        #             active_neighbor_of_u = set_active_nodes.intersection(neighbor_of_u)
+        #             cumulative_weight_of_u = sum(
+        #                 [underlying_graph.get_edge_data(v, u)['weight'] for v in active_neighbor_of_u])
+        #             if cumulative_weight_of_u > dict_individual_threshold[u]:
+        #                 list_nodes_await_to_be_activated.append(u)
+        #         if len(list_nodes_await_to_be_activated) == 0:  # TODO: check early termination condition
+        #             # print("MODE: linear threshold - EARLY TERMINATION")
+        #             break
+        #         set_active_nodes.update(list_nodes_await_to_be_activated)
+        #         set_inactive_nodes.difference_update(set(list_nodes_await_to_be_activated))
         for i in range(max_iter):
             list_nodes_await_to_be_activated = []
             for u in set_inactive_nodes:
@@ -60,6 +78,32 @@ def begin_diffusion(initial_set, underlying_graph, max_iter, mode, p_cascade=0.0
     elif mode == 'independent cascade':
         activation_history = []
         # dict_edges_probability = generate_edges_probability(edges_set=underlying_graph.edges())
+        # with trange(max_iter) as t1:
+        #     for i in t1:
+        #         t1.set_description("MODE: independent cascade ITER: %i" % i)
+        #         activation_attempts = []
+        #         for u in set_active_nodes:
+        #             neighbor_of_u = set(underlying_graph.successors(u))  # TODO: check successor or all neighbor?
+        #             inactive_neighbor_of_u = set_inactive_nodes.intersection(neighbor_of_u)
+        #             for v in inactive_neighbor_of_u:
+        #                 if (u, v) in activation_history:  # only a single chance
+        #                     continue
+        #                 activation_attempts.append((u, v))
+        #         for t in activation_attempts:
+        #             u, v = t[0], t[1]
+        #             if v in set_inactive_nodes:
+        #                 activation_history.append((u, v))
+        #                 c = underlying_graph.get_edge_data(u, v)['c']
+        #                 p = p_cascade  # dict_edges_probability[(u, v)]
+        #                 activating_probability = generate_activating_probability(p, c)
+        #                 flip_a_coin = np.random.binomial(n=1, p=activating_probability)
+        #                 if flip_a_coin == 1:
+        #                     set_active_nodes.add(v)
+        #                     set_inactive_nodes.remove(v)
+        #         if len(activation_attempts) == 0:  # TODO: check early termination condition
+        #             # print("MODE: independent cascade - EARLY TERMINATION")
+        #             break
+
         for i in range(max_iter):
             activation_attempts = []
             for u in set_active_nodes:
@@ -85,6 +129,31 @@ def begin_diffusion(initial_set, underlying_graph, max_iter, mode, p_cascade=0.0
                 break
     elif mode == 'weighted cascade':
         activation_history = []
+        # with trange(max_iter) as t1:
+        #     for i in t1:
+        #         t1.set_description("MODE: weighted cascade ITER: %i" % i)
+        #         activation_attempts = []
+        #         for u in set_active_nodes:
+        #             neighbor_of_u = set(underlying_graph.successors(u))  # TODO: check successor or all neighbor?
+        #             inactive_neighbor_of_u = set_inactive_nodes.intersection(neighbor_of_u)
+        #             for v in inactive_neighbor_of_u:
+        #                 if (u, v) in activation_history:  # only a single chance
+        #                     continue
+        #                 activation_attempts.append((u, v))
+        #         for t in activation_attempts:
+        #             u, v = t[0], t[1]
+        #             if v in set_inactive_nodes:
+        #                 activation_history.append((u, v))
+        #                 c = underlying_graph.get_edge_data(u, v)['c']
+        #                 p = 1 / underlying_graph.get_edge_data(u, v)['dv']  # dict_edges_probability[(u, v)]
+        #                 activating_probability = generate_activating_probability(p, c)
+        #                 flip_a_coin = np.random.binomial(n=1, p=activating_probability)
+        #                 if flip_a_coin == 1:
+        #                     set_active_nodes.add(v)
+        #                     set_inactive_nodes.remove(v)
+        #         if len(activation_attempts) == 0:  # TODO: check early termination condition
+        #             # print("MODE: weighted cascade - EARLY TERMINATION")
+        #             break
         for i in range(max_iter):
             activation_attempts = []
             for u in set_active_nodes:
@@ -146,11 +215,11 @@ def hill_climbing_greedy(underlying_graph, k, max_iter, exp_iter, p_cascade=0.01
         dict_diffusion_result_pool = dict()
         for iter_cnt2 in range(exp_iter):
             parallelized_diffusion_result = \
-                Parallel(n_jobs=-1)(delayed(begin_diffusion)(greedy_initial_set.union({u}),
-                                                             underlying_graph=underlying_graph,
-                                                             max_iter=max_iter,
-                                                             mode=mode,
-                                                             p_cascade=p_cascade) for u in set_valid_nodes)
+                Parallel(n_jobs=-1, verbose=1)(delayed(begin_diffusion)(greedy_initial_set.union({u}),
+                                                                        underlying_graph=underlying_graph,
+                                                                        max_iter=max_iter,
+                                                                        mode=mode,
+                                                                        p_cascade=p_cascade) for u in set_valid_nodes)
             for element in parallelized_diffusion_result:
                 focal_set = element[0]
                 focal_frozenset = frozenset(list(focal_set))
@@ -164,6 +233,7 @@ def hill_climbing_greedy(underlying_graph, k, max_iter, exp_iter, p_cascade=0.01
         greedy_initial_frozenset = max(dict_diffusion_result_pool, key=dict_diffusion_result_pool.get)
         greedy_initial_set = set(list(greedy_initial_frozenset))
         dict_tracking[iter_cnt1 + 1] = greedy_initial_set
+    clear_output(wait=True)
     return greedy_initial_set, dict_tracking
 
 
@@ -210,44 +280,45 @@ def experiments_and_plot(multi_graph, directed_graph, max_k=10, num_exp=500, max
                                          mode=mode)
 
     # experiments
-    for k in range(max_k):
+    for k in tqdm(range(max_k)):
         target_set1 = random_draw(multi_graph, k=k + 1)
         target_set2 = degree_heuristic(multi_graph, k=k + 1)
         target_set3 = set(list_centrality[-(k + 1):, 0].astype(int))
         target_set4 = dict_track[k + 1]
 
         parallelized_diffusion_result1 = \
-            Parallel(n_jobs=-1)(delayed(begin_diffusion)(target_set1,
-                                                         underlying_graph=directed_graph,
-                                                         max_iter=max_iter,
-                                                         mode=mode,
-                                                         p_cascade=p_cascade) for l in range(num_exp))
-
+            Parallel(n_jobs=-1, verbose=1)(delayed(begin_diffusion)(target_set1,
+                                                                    underlying_graph=directed_graph,
+                                                                    max_iter=max_iter,
+                                                                    mode=mode,
+                                                                    p_cascade=p_cascade) for l in range(num_exp))
+        clear_output(wait=True)
         parallelized_diffusion_result2 = \
-            Parallel(n_jobs=-1)(delayed(begin_diffusion)(target_set2,
-                                                         underlying_graph=directed_graph,
-                                                         max_iter=max_iter,
-                                                         mode=mode,
-                                                         p_cascade=p_cascade) for l in range(num_exp))
-
+            Parallel(n_jobs=-1, verbose=1)(delayed(begin_diffusion)(target_set2,
+                                                                    underlying_graph=directed_graph,
+                                                                    max_iter=max_iter,
+                                                                    mode=mode,
+                                                                    p_cascade=p_cascade) for l in range(num_exp))
+        clear_output(wait=True)
         parallelized_diffusion_result3 = \
-            Parallel(n_jobs=-1)(delayed(begin_diffusion)(target_set3,
-                                                         underlying_graph=directed_graph,
-                                                         max_iter=max_iter,
-                                                         mode=mode,
-                                                         p_cascade=p_cascade) for l in range(num_exp))
-
+            Parallel(n_jobs=-1, verbose=1)(delayed(begin_diffusion)(target_set3,
+                                                                    underlying_graph=directed_graph,
+                                                                    max_iter=max_iter,
+                                                                    mode=mode,
+                                                                    p_cascade=p_cascade) for l in range(num_exp))
+        clear_output(wait=True)
         parallelized_diffusion_result4 = \
-            Parallel(n_jobs=-1)(delayed(begin_diffusion)(target_set4,
-                                                         underlying_graph=directed_graph,
-                                                         max_iter=max_iter,
-                                                         mode=mode,
-                                                         p_cascade=p_cascade) for l in range(num_exp))
-
+            Parallel(n_jobs=-1, verbose=1)(delayed(begin_diffusion)(target_set4,
+                                                                    underlying_graph=directed_graph,
+                                                                    max_iter=max_iter,
+                                                                    mode=mode,
+                                                                    p_cascade=p_cascade) for l in range(num_exp))
+        clear_output(wait=True)
         temp_list1.append(np.array(parallelized_diffusion_result1)[:, 1])
         temp_list2.append(np.array(parallelized_diffusion_result2)[:, 1])
         temp_list3.append(np.array(parallelized_diffusion_result3)[:, 1])
         temp_list4.append(np.array(parallelized_diffusion_result4)[:, 1])
+
     # plot
     S1 = np.array(temp_list1).astype(float)
     S2 = np.array(temp_list2).astype(float)
@@ -287,3 +358,17 @@ def experiments_and_plot(multi_graph, directed_graph, max_k=10, num_exp=500, max
     ax.grid()
 
     pass
+
+
+def main():
+    multigraph, directed_graph = read_data()
+
+    target_set1 = random_draw(multigraph, k=3)
+    target_set2 = degree_heuristic(multigraph, k=3)
+    target_set3, list_centrality = centrality_heuristic(multigraph, k=3)
+    target_set4, dict_track = hill_climbing_greedy(directed_graph, k=3, max_iter=300, exp_iter=20, p_cascade=0.01,
+                                                   mode='independent cascade')
+
+
+if __name__ == "__main__":
+    main()
