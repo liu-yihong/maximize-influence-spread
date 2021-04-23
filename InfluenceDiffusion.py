@@ -163,7 +163,7 @@ def hill_climbing_greedy(underlying_graph, k, max_iter, exp_iter, p_cascade=0.01
         # greedy_initial_set = array_parallelized_diffusion_result[-1, 0]
         greedy_initial_frozenset = max(dict_diffusion_result_pool, key=dict_diffusion_result_pool.get)
         greedy_initial_set = set(list(greedy_initial_frozenset))
-        dict_tracking[iter_cnt1] = greedy_initial_set
+        dict_tracking[iter_cnt1 + 1] = greedy_initial_set
     return greedy_initial_set, dict_tracking
 
 
@@ -195,21 +195,26 @@ def read_data():
 
 
 def experiments_and_plot(multi_graph, directed_graph, max_k=10, num_exp=500, max_iter=500, mode='linear threshold',
-                         p_cascade=0.01):
+                         p_cascade=0.01, exp_iter=20):
     temp_list1 = []
     temp_list2 = []
     temp_list3 = []
     temp_list4 = []
+    # precompute all the sets for hill-climbing greedy and centrality heuristic
+    _, list_centrality = centrality_heuristic(multi_graph, k=max_k)
+    _, dict_track = hill_climbing_greedy(directed_graph,
+                                         k=max_k,
+                                         max_iter=max_iter,
+                                         exp_iter=exp_iter,
+                                         p_cascade=p_cascade,
+                                         mode=mode)
+
     # experiments
     for k in range(max_k):
         target_set1 = random_draw(multi_graph, k=k + 1)
         target_set2 = degree_heuristic(multi_graph, k=k + 1)
-        target_set3 = centrality_heuristic(multi_graph, k=k + 1)
-        target_set4 = hill_climbing_greedy(directed_graph,
-                                           k=k + 1,
-                                           max_iter=max_iter,
-                                           p_cascade=p_cascade,
-                                           mode=mode)
+        target_set3 = set(list_centrality[-(k + 1):, 0].astype(int))
+        target_set4 = dict_track[k + 1]
 
         parallelized_diffusion_result1 = \
             Parallel(n_jobs=-1)(delayed(begin_diffusion)(target_set1,
